@@ -1,6 +1,29 @@
-run:
-	gcc -ffreestanding -c kernel.c -o kernel.o
-	ld -Ttext 0x1000 -o kernel.bin -Ttext 0x1000 kernel.o --oformat binary
-	nasm -f bin bootsect.asm -o bootsect.bin
-	cat bootsect.bin kernel.bin  > os-image
-	qemu-system-x86_64 -fda os-image
+# $@ = target file
+# $< = first dep
+# $^ = all deps
+
+all: run
+
+kernel.bin: kernel_entry.o kernel.o
+	ld -m elf_i386 -o $@ -Ttext 0x1000 $^ --oformat binary
+
+kernel_entry.o: kernel_entry.asm
+	nasm $< -f elf -o $@
+
+kernel.o: kernel.c
+	gcc -m32 -ffreestanding -c $< -o $@
+
+kernel.dis: kernel.bin
+	ndisasm -b 32 $< > $@
+
+bootsect.bin: bootsect.asm
+	nasm $< -f bin -o $@
+
+os-image.bin: bootsect.bin kernel.bin
+	cat $^ > $@
+
+run: os-image.bin
+	qemu-system-i386 -fda $<
+
+clean:
+	rm *.bin *.o *.dis
