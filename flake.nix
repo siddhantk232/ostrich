@@ -13,6 +13,7 @@
         buildInputs = with pkgs; [
             nasm
             qemu
+            gdb
         ];
     };
     formatter.x86_64-linux = pkgs.nixpkgs-fmt;
